@@ -163,6 +163,31 @@
  * store NEW in MEM.  Return the initial value in MEM.  Success is
  * indicated by comparing RETURN with OLD.
  */
+#ifdef __riscv_zacas
+#define __cmpxchg_relaxed(ptr, old, new, size)				\
+({									\
+	__typeof__(ptr) __ptr = (ptr);					\
+	__typeof__(*(ptr)) __old = (old);				\
+	__typeof__(*(ptr)) __new = (new);				\
+	switch (size) {							\
+	case 4:								\
+		__asm__ __volatile__ (					\
+			"	amocas.w %0, %z2, %1\n"			\
+			: "+rJ" (__old), "+A" (*__ptr) : "rJ" (__new)	\
+			: "memory");					\
+		break;							\
+	case 8:								\
+		__asm__ __volatile__ (					\
+			"	amocas.d %0, %z2, %1\n"			\
+			: "+rJ" (__old), "+A" (*__ptr) : "rJ" (__new)	\
+			: "memory");					\
+		break;							\
+	default:							\
+		BUILD_BUG();						\
+	}								\
+	__old;								\
+})
+#else
 #define __cmpxchg_relaxed(ptr, old, new, size)				\
 ({									\
 	__typeof__(ptr) __ptr = (ptr);					\
@@ -198,6 +223,7 @@
 	}								\
 	__ret;								\
 })
+#endif
 
 #define arch_cmpxchg_relaxed(ptr, o, n)					\
 ({									\
@@ -207,6 +233,33 @@
 					_o_, _n_, sizeof(*(ptr)));	\
 })
 
+#ifdef __riscv_zacas
+#define __cmpxchg_acquire(ptr, old, new, size)				\
+({									\
+	__typeof__(ptr) __ptr = (ptr);					\
+	__typeof__(*(ptr)) __old = (old);				\
+	__typeof__(*(ptr)) __new = (new);				\
+	switch (size) {							\
+	case 4:								\
+		__asm__ __volatile__ (					\
+			"	amocas.w %0, %z2, %1\n"			\
+			RISCV_ACQUIRE_BARRIER				\
+			: "+rJ" (__old), "+A" (*__ptr) : "rJ" (__new)	\
+			: "memory");					\
+		break;							\
+	case 8:								\
+		__asm__ __volatile__ (					\
+			"	amocas.d %0, %z2, %1\n"			\
+			RISCV_ACQUIRE_BARRIER				\
+			: "+rJ" (__old), "+A" (*__ptr) : "rJ" (__new)	\
+			: "memory");					\
+		break;							\
+	default:							\
+		BUILD_BUG();						\
+	}								\
+	__old;								\
+})
+#else
 #define __cmpxchg_acquire(ptr, old, new, size)				\
 ({									\
 	__typeof__(ptr) __ptr = (ptr);					\
@@ -244,6 +297,7 @@
 	}								\
 	__ret;								\
 })
+#endif
 
 #define arch_cmpxchg_acquire(ptr, o, n)					\
 ({									\
@@ -253,6 +307,33 @@
 					_o_, _n_, sizeof(*(ptr)));	\
 })
 
+#ifdef __riscv_zacas
+#define __cmpxchg_release(ptr, old, new, size)				\
+({									\
+	__typeof__(ptr) __ptr = (ptr);					\
+	__typeof__(*(ptr)) __old = (old);				\
+	__typeof__(*(ptr)) __new = (new);				\
+	switch (size) {							\
+	case 4:								\
+		__asm__ __volatile__ (					\
+			RISCV_RELEASE_BARRIER				\
+			"	amocas.w %0, %z2, %1\n"			\
+			: "+rJ" (__old), "+A" (*__ptr) : "rJ" (__new)	\
+			: "memory");					\
+		break;							\
+	case 8:								\
+		__asm__ __volatile__ (					\
+			RISCV_RELEASE_BARRIER				\
+			"	amocas.d %0, %z2, %1\n"			\
+			: "+rJ" (__old), "+A" (*__ptr) : "rJ" (__new)	\
+			: "memory");					\
+		break;							\
+	default:							\
+		BUILD_BUG();						\
+	}								\
+	__old;								\
+})
+#else
 #define __cmpxchg_release(ptr, old, new, size)				\
 ({									\
 	__typeof__(ptr) __ptr = (ptr);					\
@@ -290,6 +371,7 @@
 	}								\
 	__ret;								\
 })
+#endif
 
 #define arch_cmpxchg_release(ptr, o, n)					\
 ({									\
@@ -299,6 +381,31 @@
 					_o_, _n_, sizeof(*(ptr)));	\
 })
 
+#ifdef __riscv_zacas
+#define __cmpxchg(ptr, old, new, size)					\
+({									\
+	__typeof__(ptr) __ptr = (ptr);					\
+	__typeof__(*(ptr)) __old = (old);				\
+	__typeof__(*(ptr)) __new = (new);				\
+	switch (size) {							\
+	case 4:								\
+		__asm__ __volatile__ (					\
+			"	amocas.w.aqrl %0, %z2, %1\n"		\
+			: "+rJ" (__old), "+A" (*__ptr) : "rJ" (__new)	\
+			: "memory");					\
+		break;							\
+	case 8:								\
+		__asm__ __volatile__ (					\
+			"	amocas.d.aqrl %0, %z2, %1\n"		\
+			: "+rJ" (__old), "+A" (*__ptr) : "rJ" (__new)	\
+			: "memory");					\
+		break;							\
+	default:							\
+		BUILD_BUG();						\
+	}								\
+	__old;								\
+})
+#else
 #define __cmpxchg(ptr, old, new, size)					\
 ({									\
 	__typeof__(ptr) __ptr = (ptr);					\
@@ -336,6 +443,7 @@
 	}								\
 	__ret;								\
 })
+#endif
 
 #define arch_cmpxchg(ptr, o, n)						\
 ({									\

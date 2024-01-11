@@ -592,6 +592,12 @@ config TOOLCHAIN_HAS_ZACAS
 	depends on !64BIT || $(cc-option,-mabi=lp64 -march=rv64ima_zacas)
 	depends on !32BIT || $(cc-option,-mabi=ilp32 -march=rv32ima_zacas)
 
+config TOOLCHAIN_HAS_ZABHA
+       bool
+       default y
+       depends on !64BIT || $(cc-option,-mabi=lp64 -march=rv64ima_zabha)
+       depends on !32BIT || $(cc-option,-mabi=ilp32 -march=rv32ima_zabha)
+
 config TOOLCHAIN_NEEDS_EXPLICIT_ZICSR_ZIFENCEI
 	def_bool y
 	# https://sourceware.org/git/?p=binutils-gdb.git;a=commit;h=aed44286efa8ae8717a77d94b51ac3614e2ca6dc

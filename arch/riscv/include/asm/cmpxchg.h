@@ -11,12 +11,46 @@
 #include <asm/barrier.h>
 #include <asm/fence.h>
 
+#ifdef CONFIG_TOOLCHAIN_HAS_ZABHA
+#define __xchg_subword_relaxed(ptr, new, size, ret)			\
+({									\
+	__typeof__(ptr) __ptr = (ptr);					\
+	__typeof__(new) __new = (new);					\
+	switch (size) {							\
+	case 1:								\
+		__asm__ __volatile__ (					\
+			"	amoswap.b %0, %2, %1\n"			\
+			: "=r" (__ret), "+A" (*__ptr)			\
+			: "r" (__new)					\
+			: "memory");					\
+		break;							\
+	case 2:								\
+		__asm__ __volatile__ (					\
+			"	amoswap.h %0, %2, %1\n"			\
+			: "=r" (__ret), "+A" (*__ptr)			\
+			: "r" (__new)					\
+			: "memory");					\
+		break;							\
+	default:							\
+		BUILD_BUG();						\
+	}								\
+})
+#else
+#define __xchg_subword_relaxed(ptr, new, size, ret)	BUILD_BUG()
+#endif
+
+
+
 #define __xchg_relaxed(ptr, new, size)					\
 ({									\
 	__typeof__(ptr) __ptr = (ptr);					\
 	__typeof__(new) __new = (new);					\
 	__typeof__(*(ptr)) __ret;					\
 	switch (size) {							\
+	case 1:								\
+	case 2:								\
+		__xchg_subword_relaxed(ptr, new, size, __ret);		\
+		break;							\
 	case 4:								\
 		__asm__ __volatile__ (					\
 			"	amoswap.w %0, %2, %1\n"			\
